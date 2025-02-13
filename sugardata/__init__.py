@@ -3,4 +3,4 @@ warnings.filterwarnings("ignore", message=".*Series.__getitem__ treating keys as
 
 from .api import *
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'

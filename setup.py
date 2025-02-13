@@ -7,7 +7,7 @@ with open("Readme.md", "r") as f:
 
 setup(
     name="sugardata",
-    version="0.0.1",
+    version="0.0.2",
     description="Generates synthetic datasets tailored for transformer-based models",
     packages=find_packages(),
     long_description=long_description,
@@ -39,6 +39,14 @@ setup(
         'pandas==2.2.3',
         'torch==2.5.1',
         'ipywidgets==8.1.5',
+        'langchain==0.3.18',
+        'langchain-openai==0.3.5',
+        'langchain-google-genai==2.0.9',
+        'langchain-together==0.3.0',
+        'langchain-groq==0.2.4',
+        'langchain-ollama==0.2.3',
+        'datasets==3.2.0',
+        'deep-translator==1.11.4',
     ],
     python_requires='>=3.7',
 )
