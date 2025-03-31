@@ -7,7 +7,7 @@ with open("Readme.md", "r") as f:
 
 setup(
     name="sugardata",
-    version="0.0.2",
+    version="0.0.3",
     description="Generates synthetic datasets tailored for transformer-based models",
     packages=find_packages(),
     long_description=long_description,

@@ -9,7 +9,7 @@ from typing import Literal, Any
 def create_langchain_llm(
         provider: Literal["openai", "google", "together", "groq", "ollama"],
         model: str, 
-        temperature: float=0.9, 
+        temperature: float=0.95, 
         **kwargs
         ) -> Any:
     """
@@ -18,7 +18,7 @@ def create_langchain_llm(
     Args:
         provider (str): The provider of the LLM model. Options: 'openai', 'google', 'together', 'groq', 'ollama'.
         model (str): The model name. For example: gpt-4o-mini.
-        temperature (float, optional): The temperature of the model. Defaults to 0.9.
+        temperature (float, optional): The temperature of the model. Defaults to 0.95.
         **kwargs: Additional parameters for the LLM model.
     Raises:
         ValueError: If the provider is not valid.

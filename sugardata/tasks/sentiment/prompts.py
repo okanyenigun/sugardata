@@ -144,110 +144,6 @@ CONCEPT_EXAMPLES = [
     }
 ]
 
-STYLE_PREFIX = """
-You are an expert in linguistics, discourse analysis, and narrative structures, specializing in identifying writing styles and personas based on context. Your task is to analyze the given concept and generate 10 distinct sentence styles, along with a suitable persona and writing style for each.
-
-For given concept, determine:
-
-10 different writing styles or discourse formats where this concept commonly appears.
-A persona (author perspective) that would naturally use this style.
-A medium where the sentence will be taken and writing style description, which may include tone, formality, and influences (e.g., technical, poetic, first-person, etc.).
-"""
-
-STYLE_SUFFIX = """
-
-Identify 10 possible sentence styles for concept across different domains.
-For each style, include:
-A title of medium (e.g., "Scientific Research Paper")
-A persona (who is writing this?)
-A writing style description (tone, structure, level of formality, influences, etc.)
-Ensure a mix of formal, informal, technical, creative, and persuasive formats.
-
-Concept: <Insert Given Concept>
-1. **Sentence Style**: <Type of text>
-   - **Persona**: <Who is writing this?>
-   - **Writing Style**: <Description of style, tone, and structure>
-2. **Sentence Style**: <Type of text>
-   - **Persona**: <Who is writing this?>
-   - **Writing Style**: <Description of style, tone, and structure>
-...
-10. **Sentence Style**: <Type of text>
-   - **Persona**: <Who is writing this?>
-   - **Writing Style**: <Description of style, tone, and structure>
-
-Format Instructions:
-{format_instructions}
-
-The given concept is {concept}
-"""
-
-STYLE_EXAMPLE_TEMPLATE = """
-Concept: {concept}\nMedium: {medium}\nPersona: {persona}\nWriting Style: {writing_style}
-"""
-
-
-STYLE_EXAMPLES = [
-    {
-        "concept": "Artificial Intelligence",
-        "medium": "Scientific Research Paper",
-        "persona": "A Silicon Valley research scientist at an AI lab like OpenAI or DeepMind.",
-        "writing_style": "Formal, highly technical, full of citations, structured in abstract, methodology, results, discussion."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "medium": "Business Pitch Deck",
-        "persona": "A startup founder at Y Combinator pitching an AI-driven SaaS product.",
-        "writing_style": "Persuasive, concise, data-backed, with a focus on market potential and ROI."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "medium": "Fictional Narrative",
-        "persona": "A sci-fi author inspired by Isaac Asimov writing a near-future AI-driven dystopia.",
-        "writing_style": "Descriptive, world-building, with thought-provoking philosophical undertones."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "medium": "News Headline & Report",
-        "persona": "A tech journalist at WIRED or The Verge covering AI breakthroughs.",
-        "writing_style": "Catchy, engaging, slightly sensationalized, with a balance of facts and opinion."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "medium": "First-Person Blog Post",
-        "persona": "A developer who built an AI chatbot from scratch sharing their experience.",
-        "writing_style": "Casual, personal, slightly technical but approachable for non-experts."
-    },
-    {
-        "concept": "Climate Change",
-        "medium": "Scientific Journal Article",
-        "persona": "A climate scientist at NASA publishing in Nature Climate Change.",
-        "writing_style": "Data-heavy, peer-reviewed, objective, structured in sections."
-    },
-    {
-        "concept": "Climate Change",
-        "medium": "Government Policy Statement",
-        "persona": "A minister from the European Union addressing climate policy.",
-        "writing_style": "Formal, structured, politically neutral but decisive."
-    },
-    {
-        "concept": "Climate Change",
-        "medium": "Activist Speech",
-        "persona": "A Greenpeace activist rallying a protest crowd.",
-        "writing_style": "Passionate, urgent, call to action, emotionally engaging."
-    },
-    {
-        "concept": "Climate Change",
-        "medium": "News Report",
-        "persona": "A BBC environment journalist covering rising sea levels.",
-        "writing_style": "Balanced, informative, neutral but engaging."
-    },
-    {
-        "concept": "Climate Change",
-        "medium": "Advertising Campaign",
-        "persona": "A marketing strategist for Patagonia creating an ad campaign.",
-        "writing_style": "Short, emotional, impactful, visual-driven."
-    }
-]
 
 GENERATE_PROMPT = """
 You are an expert writer with a deep understanding of linguistic styles and sentiment expression. 
@@ -256,12 +152,63 @@ Your task is to generate text based on the given parameters.
 **Input Parameters:**
 - **ID:** {id}
 - **Concept:** {concept}
-- **Subconcept:** {generated_concept}
+- **Subconcept:** {extended_concept}
 - **Explanation:** {explanation}
-- **Medium:** {medium} (e.g., news article, academic paper, social media post, fiction, advertisement, etc.)
-- **Persona:** {persona} (The author perspective writing this text)
-- **Writing Style:** {writing_style} (e.g., formal, technical, emotional, poetic, first-person, etc.)
+- **Writing Style:** {writing_style} 
+- **Medium:** {medium}
+- **Persona:** {persona}
+- **Intention:** {intention}
+- **Tone:** {tone}
+- **Audience:** {audience}
+- **Context:** {context}
+- **Language Register:** {language_register} 
 - **Sentiment Label:** {sentiment_label} (e.g., Positive, Negative, Neutral, 1-star, 5-star)
+- **Sentence Length:** {sentence_length} (e.g., 1 sentence, 2 sentences, short paragraph, long paragraph)
+
+### **Instructions:**
+1. Write the text in the **{medium}** format from the perspective of **{persona}**.
+2. Maintain the given **{writing_style}** throughout.
+3. The text should reflect a **{sentiment_label}** sentiment.
+4. The length of the text should match the **{sentence_length}** parameter.
+
+### **Example Output Format:**
+- Generated Text: "..."
+{format_instructions}
+
+Now, generate the text.
+"""
+
+ASPECT_GENERATION_PROMPT = """
+You are an expert in ontology design, knowledge representation, and concept hierarchy analysis. 
+Your task is to generate aspects for a given concept. These will be used in Aspect-Based Sentiment Analysis (ABSA).
+The aspects should be relevant to the concept and as many as wanted.
+
+Concept: {concept}
+The number of aspects: {num_aspects}
+Aspects:
+
+Format instructions: {format_instructions}
+
+"""
+
+ABSA_GENERATE_PROMPT = """
+You are an expert writer with a deep understanding of linguistic styles and sentiment expression. 
+Your task is to generate text based on the given parameters. This text will be used for Aspect-Based Sentiment Analysis (ABSA).
+Therefore you will create a text with given parameters that reflects the sentimens for each aspect for both respectively.
+
+**Input Parameters:**
+- **ID:** {id}
+- **Concept:** {concept}
+- **Aspects:** {aspects}
+- **Writing Style:** {writing_style} 
+- **Medium:** {medium}
+- **Persona:** {persona}
+- **Intention:** {intention}
+- **Tone:** {tone}
+- **Audience:** {audience}
+- **Context:** {context}
+- **Language Register:** {language_register} 
+- **Sentiment Label:** {sentiment_label} (Each for one aspect, e.g., Positive, Negative, Neutral, 1-star, 5-star)
 - **Sentence Length:** {sentence_length} (e.g., 1 sentence, 2 sentences, short paragraph, long paragraph)
 
 ### **Instructions:**
