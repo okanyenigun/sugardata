@@ -1,6 +1,4 @@
 import pandas as pd
-from transformers import TapasTokenizer, TapasModel
-from transformers.tokenization_utils_base import BatchEncoding
 from typing import Any, Dict, Optional
 
 
@@ -101,9 +99,9 @@ def generate_financial_balance_sheet() -> pd.DataFrame:
 
 def get_real_tapas_answer(
         table: pd.DataFrame, 
-        model: TapasModel, 
-        tokenizer: TapasTokenizer, 
-        inputs: BatchEncoding, 
+        model: object, # TapasModel or similar
+        tokenizer: object,  # TapasModel or similar
+        inputs: object,  # BatchEncoding or similar 
         id2aggregation: Optional[Dict[int, str]]=None
         ) -> Any:
     """
