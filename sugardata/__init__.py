@@ -1,6 +1,11 @@
 import warnings
 warnings.filterwarnings("ignore", message=".*Series.__getitem__ treating keys as positions is deprecated.*")
 
-from .api import *
+from .tasks.sentiment.service import generate_sentiment_data, agenerate_sentiment_data
 
-__version__ = '0.0.3'
+__all__ = [
+    "generate_sentiment_data",
+    "agenerate_sentiment_data"
+]
+
+__version__ = '0.0.4'

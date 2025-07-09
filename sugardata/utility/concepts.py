@@ -108,10 +108,6 @@ INTENTIONS = [
     "warn",
     "recommend",
     "summarize",
-]
-
-
-TONES = [
     "neutral",
     "angry",
     "joyful",
@@ -125,50 +121,12 @@ TONES = [
 ]
 
 
-AUDIENCES = [
-    "children",
-    "teenagers",
-    "adults",
-    "professionals",
-    "general public",
-    "academics",
-    "customers",
-    "fans",
-    "investors",
-    "students",
-]
-
-
-CONTEXTS = [
-    "casual conversation",
-    "academic discussion",
-    "product review",
-    "public announcement",
-    "emergency situation",
-    "marketing campaign",
-    "technical briefing",
-    "personal diary",
-    "court testimony",
-    "debate",
-]
-
-
-LANGUAGE_REGISTERS = [
-    "very formal",
-    "formal",
-    "neutral",
-    "informal",
-    "very informal",
-    "jargon-heavy",
-    "layman-friendly",
-    "slangy",
-    "archaic",
-    "modern",
-]
-
-
 SENTENCE_LENGTH_OPTIONS = [
+    "A couple of words",
+    "Unfinished sentence",
+    "1 short phrase",
     "1 short sentence", 
+    "1 very very short sentence",
     "1 sentence", 
     "2 sentences", 
     "Short Paragraph", 

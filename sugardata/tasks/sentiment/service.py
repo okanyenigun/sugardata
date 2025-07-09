@@ -1,194 +1,105 @@
-import uuid
-import json
-import random
 import pandas as pd
-from langchain import FewShotPromptTemplate
-from langchain.prompts import PromptTemplate
-from langchain.output_parsers import PydanticOutputParser
 from datasets import Dataset
-from typing import Any, Dict, Optional, List, Literal
-from .schemas import OntologyConcepts, GeneratedText
-from .prompts import CONCEPT_EXAMPLE_TEMPLATE, CONCEPT_EXAMPLES, CONCEPT_PREFIX, CONCEPT_SUFFIX, GENERATE_PROMPT
-from ..base import NLPTask
-from ...concepts import SENTIMENT_LABEL_MAPPING
+from typing import Optional, Dict, List, Union
+from .schemas import SentimentConfig
+from .generator import SentimentGenerator
+from .augment import SentimentAugmenter
+from .prompts import get_dimension_prompt, get_aspect_prompt, get_sentence_prompt, get_structure_prompt
+from ...components.factory import create_llm_object
 from ...utility.translate import TranslationUtility
-from ...utility.draw import DrawUtility
+
+def _build_sentiment_config(
+        concept=None, language=None, vendor="openai", model="gpt-4o-mini",
+        model_params=None, n_aspect=1, n_sentence=100, batch_size=10,
+        label_options=["positive", "negative"], export_type="default",
+        dimensions=None, aspects=None, examples=None, **kwargs
+    ):
+    # Detect language
+    if not language:
+        if concept:
+            language = TranslationUtility.detect_language(concept)
+        if examples:
+            language = TranslationUtility.detect_language(examples[0])
+
+    # Default model params
+    if not model_params:
+        model_params = {"temperature": 0.95}
+    if "temperature" not in model_params:
+        model_params["temperature"] = 0.95
+
+    llm = create_llm_object(vendor=vendor, model=model, **model_params)
+
+    config = SentimentConfig(
+        language=language,
+        dimension_prompt=get_dimension_prompt(language=language),
+        aspect_prompt=get_aspect_prompt(language=language),
+        sentence_prompt=get_sentence_prompt(language=language),
+        structure_prompt=get_structure_prompt(language=language),
+        llm=llm,
+        n_aspect=n_aspect,
+        n_sentence=n_sentence,
+        batch_size=batch_size,
+        label_options=label_options,
+        export_type=export_type,
+    )
+    return config, dimensions, aspects, examples
 
 
-class SentimentGenerator(NLPTask):
+def generate_sentiment_data(
+        concept: Optional[str]=None,
+        language: Optional[str]=None,
+        vendor: str="openai",
+        model: str="gpt-4o-mini",
+        model_params: Optional[Dict]=None,
+        n_aspect: int=1,
+        n_sentence: int=100,
+        batch_size: int=10,
+        label_options: Optional[List]=["positive", "negative"],
+        export_type: str="default",
+        dimensions: Optional[List[str]]=None,
+        aspects: Optional[List[str]]=None,
+        examples: Optional[List[str]]=None,
+        **kwargs
+    ) -> Union[Dict, pd.DataFrame, Dataset]:
 
-    def __init__(
-            self, 
-            model_provider: str, 
-            model_name: str, 
-            model_kwargs: Optional[Dict[str, Any]]=None, 
-            batch_size: int=16, 
-            language: str="en",
-            n_labels=2
-            ):
-        super().__init__(model_provider, model_name, model_kwargs, batch_size, language)
+    config, dimensions, aspects, examples = _build_sentiment_config(
+        concept=concept, language=language, vendor=vendor, model=model,
+        model_params=model_params, n_aspect=n_aspect, n_sentence=n_sentence,
+        batch_size=batch_size, label_options=label_options, export_type=export_type,
+        dimensions=dimensions, aspects=aspects, examples=examples, **kwargs
+    )
 
-        self.labels = SENTIMENT_LABEL_MAPPING.get(n_labels)
-        if not self.labels:
-            raise ValueError(f"Invalid number of labels: {n_labels}. Must be one of {list(SENTIMENT_LABEL_MAPPING.keys())}.")
-
-    def generate(
-            self, 
-            concept: str, 
-            n_samples: int = 100, 
-            output_format: Literal["pandas", "json", "dictionary", "hg"]="pandas"
-            ) -> Any:
-        
-        run_id = str(uuid.uuid4())[-6:]
-
-        concept_en = self._translate_concept(concept)
-        
-        aspects = self._generate_aspects(concept_en)
-        
-        batches = self._create_batches(concept, aspects, n_samples)
-        
-        sentences = self._generate_sentences(batches)
-        
-        sentences = self._add_additional_info(sentences, batches, run_id)
-        
-        sentences = self._translate_to_original(sentences)
-        
-        output = self._create_output(sentences, output_format)
-
-        return output
-    
-    def _set_prompts(self) -> None:
-        self._prompts = {
-            "concept_examples": CONCEPT_EXAMPLES,
-            "concept_example_template": CONCEPT_EXAMPLE_TEMPLATE,
-            "concept_prefix": CONCEPT_PREFIX,
-            "concept_suffix": CONCEPT_SUFFIX,
-            "generate_prompt": GENERATE_PROMPT,
-        }
-        return
-
-    def _translate_concept(self, concept: str) -> str:
-        if self.language == "en":
-            return concept
-
-        return TranslationUtility.translate(concept, target_language="en", source_language=self.language)
- 
-    def _generate_aspects(self, concept: str) -> List[Dict[str, str]]:
-        try:
-            prompt = FewShotPromptTemplate(
-                examples=self._prompts["concept_examples"],
-                example_prompt=PromptTemplate(
-                    input_variables=["concept", "generated_concept", "explanation"], 
-                    template=self._prompts["concept_example_template"]
-                ),
-                prefix=self._prompts["concept_prefix"],
-                suffix=self._prompts["concept_suffix"],
-                input_variables=["concept"],
-                example_separator="\n\n"
-            )
-
-            parser = PydanticOutputParser(pydantic_object=OntologyConcepts)
-            format_instructions = parser.get_format_instructions()
-            chain = prompt | self.llm | parser
-
-            response = chain.invoke({
-                "concept":concept,
-                "format_instructions": format_instructions
-                }
-            )
-
-            return [concept.model_dump() for concept in response.concepts]
-        except Exception as e:
-            print("Error in extending concept: ", e)
-            raise e
-        
-    def _create_batches(self, concept: str, aspects: List[Dict[str, str]], n_samples: int) -> List[Dict[str, str]]:
-        data = []
-        
-        for i in range(n_samples):
-            aspects_record = random.choice(aspects)
-            data.append({
-                "id": i,
-                "concept": concept,
-                "extended_concept": aspects_record["generated_concept"],
-                "explanation": aspects_record["explanation"],
-                "sentiment_label": random.choice(self.labels),
-                **DrawUtility.draw_style()
-            })
-
-        return data
-    
-    def _generate_sentences(self, batches: List[Dict[str, str]]) -> List[Dict[str, str]]:
-        output = []
-
-        prompt = PromptTemplate.from_template(self._prompts["generate_prompt"])
-
-        parser = PydanticOutputParser(pydantic_object=GeneratedText)
-        format_instructions = parser.get_format_instructions()
-
-        chain = prompt | self.llm | parser
-
-        for i in range(0, len(batches), self.batch_size):
-            batch = batches[i:i+self.batch_size]
-            
-            for item in batch:
-                item["format_instructions"] = format_instructions
-
-            response = chain.batch(batch)
-            response = [resp.model_dump() for resp in response]
-
-            output.extend(response)
-
-        return output
-    
-    def _add_additional_info(self, data: List[Dict[str, str]], batches: List[Dict[str, str]], run_id) -> List[Dict[str, str]]:
-        batch_map = {batch["id"]: batch for batch in batches}
-
-        for item in data:
-            batch = batch_map.get(int(item["id"]))
-
-            if batch:
-                item["concept"] = batch["concept"]
-                item["label"] = batch["sentiment_label"]
-                item["extended_concept"] = batch["extended_concept"]
-                item["writing_style"] = batch["writing_style"]
-                item["medium"] = batch["medium"]
-                item["persona"] = batch["persona"]
-                item["intention"] = batch["intention"]
-                item["tone"] = batch["tone"]
-                item["audience"] = batch["audience"]
-                item["context"] = batch["context"]
-                item["language_register"] = batch["language_register"]
-                item["run_id"] = run_id
-
-        return data
-    
-    def _translate_to_original(self, sentences: List[Dict[str, str]]) -> List[Dict[str, str]]:
-        if self.language == "en":
-            return sentences
-        
-        for sentence in sentences:
-            sentence["text"]= TranslationUtility.translate(
-                sentence["text"], 
-                target_language=self.language, 
-                source_language="en"
-            )
-
-        return sentences
-    
-    def _create_output(self, sentences: List[Dict[str, str]], output_format: str) -> Any:
-        if output_format == "pandas":
-            return pd.DataFrame(sentences)
-        elif output_format == "json":
-            return json.dumps(sentences, indent=4)
-        elif output_format == "dictionary":
-            return sentences
-        elif output_format == "hg":
-            return Dataset.from_pandas(pd.DataFrame(sentences))
-        else:
-            raise ValueError(f"Invalid output format: {output_format}. Must be one of ['pandas', 'json', 'dictionary', 'hg'].")
+    if examples:
+        return SentimentAugmenter(config=config).generate(examples=examples)
+    else:
+        return SentimentGenerator(config=config).generate(concept=concept, dimensions=dimensions, aspects=aspects)
 
 
+async def agenerate_sentiment_data(
+        concept: Optional[str]=None,
+        language: Optional[str]=None,
+        vendor: str="openai",
+        model: str="gpt-4o-mini",
+        model_params: Optional[Dict]=None,
+        n_aspect: int=1,
+        n_sentence: int=100,
+        batch_size: int=10,
+        label_options: Optional[List]=["positive", "negative"],
+        export_type: str="default",
+        dimensions: Optional[List[str]]=None,
+        aspects: Optional[List[str]]=None,
+        examples: Optional[List[str]]=None,
+        **kwargs
+    ) -> Union[Dict, pd.DataFrame, Dataset]:
 
+    config, dimensions, aspects, examples = _build_sentiment_config(
+        concept=concept, language=language, vendor=vendor, model=model,
+        model_params=model_params, n_aspect=n_aspect, n_sentence=n_sentence,
+        batch_size=batch_size, label_options=label_options, export_type=export_type,
+        dimensions=dimensions, aspects=aspects, examples=examples, **kwargs
+    )
 
-        
+    if examples:
+        return await SentimentAugmenter(config=config).agenerate(examples=examples)
+    else:
+        return await SentimentGenerator(config=config).agenerate(concept=concept, dimensions=dimensions, aspects=aspects)

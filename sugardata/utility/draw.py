@@ -1,7 +1,7 @@
 import random
 from typing import Dict, List, Tuple
-from ..concepts import (
-    WRITING_STYLES, MEDIUMS, PERSONAS, INTENTIONS, TONES, AUDIENCES, CONTEXTS, LANGUAGE_REGISTERS, SENTENCE_LENGTH_OPTIONS
+from .concepts import (
+    WRITING_STYLES, MEDIUMS, PERSONAS, INTENTIONS, SENTENCE_LENGTH_OPTIONS
 )
 
 
@@ -14,10 +14,6 @@ class DrawUtility:
             "medium": random.choice(MEDIUMS),
             "persona": random.choice(PERSONAS),
             "intention": random.choice(INTENTIONS),
-            "tone": random.choice(TONES),
-            "audience": random.choice(AUDIENCES),
-            "context": random.choice(CONTEXTS),
-            "language_register": random.choice(LANGUAGE_REGISTERS),
             "sentence_length": random.choice(SENTENCE_LENGTH_OPTIONS),
         }
     

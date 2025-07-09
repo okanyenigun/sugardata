@@ -1,225 +1,213 @@
+from ...components.translator import Translator
 
 
-CONCEPT_PREFIX = """
-You are an expert in ontology design, knowledge representation, and concept hierarchy analysis. Your task is to analyze a given concept by identifying at least 10 related sub-concepts and adjacent concepts—some being hierarchical subcategories while others are creative connections beyond direct taxonomy.
+def get_dimension_prompt(language: str) -> str:
 
-For the given concept, generate a structured list of related concepts in the following format:
+    DIMENSION_PROMPTS = {
+        "en": """
+                You are an expert in ontology design, knowledge representation, and concept hierarchy analysis.
+                You will be given a concept and your task is to generate dimensions, sub fields, subcategories, and related concepts for that concept.
+                You must generate at least 10 dimensions, ensuring a mix of hierarchical subcategories and adjacent concepts.
+                
+                ############
+                Concept: {concept}
 
-Sub-concepts (Hierarchical Breakdown): Concepts that fall directly under in a structured manner.
-Related Concepts (Creative Connections): Concepts that are relevant but do not directly fall under the main concept. These may include adjacent fields, applications, or interdisciplinary connections.
-Think through each aspect carefully, considering logical relationships, broader implications, and creative associations before finalizing the response.
-"""
+                Format Instructions:
+                {format_instructions}
+            """,
+        "tr":"""
+                Ontoloji tasarımı, bilgi temsili ve kavram hiyerarşisi analizi konusunda uzman birisiniz.
+                Size bir kavram verilecek ve göreviniz bu kavram için boyutlar, alt alanlar, alt kategoriler ve ilgili kavramlar üretmektir.
+                En az 10 boyut üretmelisiniz, hiyerarşik alt kategoriler ve ilgili kavramlar arasında bir karışım sağlamak için.
+                Alt kategoriler (kavramın altında yer alanlar) ve ilgili kavramlar (yaratıcı bağlantılar kuranlar) arasında net bir ayrım yapmalısınız.
 
-CONCEPT_SUFFIX = """
-Identify at least 10 concepts related to concept, ensuring a mix of hierarchical sub-concepts and adjacent concepts.
-Clearly distinguish between sub-concepts (which fall under concept) and related concepts (which connect creatively).
-Format the response in a structured, bullet-point list with a short explanation of why each concept is relevant.
-
-Output Format:
-
-Concept: <Insert Given Concept>
-- **Sub-concepts:**
-  1. <Sub-concept 1> – <Brief Explanation>
-  2. <Sub-concept 2> – <Brief Explanation>
-  ...
-  
-- **Related Concepts:**
-  6. <Related Concept 1> – <Brief Explanation>
-  7. <Related Concept 2> – <Brief Explanation>
-  ...
-
-Format Instructions:
-{format_instructions}
-
-The given concept is {concept}
-"""
-
-CONCEPT_EXAMPLE_TEMPLATE = """
-Concept: {concept}\n- {generated_concept}: {explanation}
-"""
-
-CONCEPT_EXAMPLES = [
-    # Examples for Artificial Intelligence
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Machine Learning",
-        "explanation": "A subset of AI that focuses on algorithms learning from data."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Deep Learning",
-        "explanation": "A branch of machine learning using neural networks for complex tasks."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Neural Networks",
-        "explanation": "Computational models inspired by the human brain for AI tasks."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Reinforcement Learning",
-        "explanation": "An AI training method using rewards and penalties."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Symbolic AI",
-        "explanation": "AI that relies on rules and logic instead of statistical models."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Computational Neuroscience",
-        "explanation": "The study of brain computations, related to AI mechanisms."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Cognitive Science",
-        "explanation": "Interdisciplinary field studying human intelligence and AI parallels."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Robotics",
-        "explanation": "AI applications in autonomous machines and robots."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Ethics in AI",
-        "explanation": "The study of AI’s moral and societal impacts."
-    },
-    {
-        "concept": "Artificial Intelligence",
-        "generated_concept": "Generative AI",
-        "explanation": "AI that can create content, such as images or text, using deep learning."
-    },
-
-    # Examples for Climate Change
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Global Warming",
-        "explanation": "The long-term increase in Earth's average temperature."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Carbon Emissions",
-        "explanation": "Greenhouse gases released by human activities."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Renewable Energy",
-        "explanation": "Sustainable energy sources reducing climate impact."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Ocean Acidification",
-        "explanation": "The decrease in ocean pH due to CO2 absorption."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Deforestation",
-        "explanation": "The large-scale removal of forests affecting climate balance."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Environmental Economics",
-        "explanation": "The study of economic impacts on climate policies."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Climate Policy",
-        "explanation": "Governmental and global policies addressing climate issues."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Green Technologies",
-        "explanation": "Innovations aimed at reducing environmental impact."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Geoengineering",
-        "explanation": "Large-scale intervention methods to counteract climate change."
-    },
-    {
-        "concept": "Climate Change",
-        "generated_concept": "Sustainable Development",
-        "explanation": "Balancing economic growth with environmental sustainability."
+                Kavram: {concept}
+                Format Talimatları:
+                {format_instructions}
+            """
     }
-]
+
+    text = DIMENSION_PROMPTS.get(language)
+
+    if not text:
+        core_text = DIMENSION_PROMPTS["en"].split("############")[0]
+        translated_core_text = Translator.translate(core_text, target_language=language, source_language="en", vendor="deep-translator")
+        text = translated_core_text + DIMENSION_PROMPTS["en"].split("############")[1]
+
+    return text
 
 
-GENERATE_PROMPT = """
-You are an expert writer with a deep understanding of linguistic styles and sentiment expression. 
-Your task is to generate text based on the given parameters.
+def get_aspect_prompt(language: str) -> str:
+    ASPECT_PROMPTS = {
+        "en": """
+                You are an expert in ontology design, knowledge representation, and concept hierarchy analysis.
+                You will be given a concept and its a specific dimension (or subcategory) and your task is to generate aspects for that concept.
 
-**Input Parameters:**
-- **ID:** {id}
-- **Concept:** {concept}
-- **Subconcept:** {extended_concept}
-- **Explanation:** {explanation}
-- **Writing Style:** {writing_style} 
-- **Medium:** {medium}
-- **Persona:** {persona}
-- **Intention:** {intention}
-- **Tone:** {tone}
-- **Audience:** {audience}
-- **Context:** {context}
-- **Language Register:** {language_register} 
-- **Sentiment Label:** {sentiment_label} (e.g., Positive, Negative, Neutral, 1-star, 5-star)
-- **Sentence Length:** {sentence_length} (e.g., 1 sentence, 2 sentences, short paragraph, long paragraph)
+                ############
+                Index: {index}
+                Concept: {concept}
+                Dimension: {dimension}
 
-### **Instructions:**
-1. Write the text in the **{medium}** format from the perspective of **{persona}**.
-2. Maintain the given **{writing_style}** throughout.
-3. The text should reflect a **{sentiment_label}** sentiment.
-4. The length of the text should match the **{sentence_length}** parameter.
+                Format Instructions:
+                {format_instructions}
+            """,
+        "tr": """
+                Ontoloji tasarımı, bilgi temsili ve kavram hiyerarşisi analizi konusunda uzman birisiniz.
+                Size bir kavram ve onun belirli bir boyutu (veya alt kategorisi) verilecek ve göreviniz bu kavram için yönleri üretmektir.
 
-### **Example Output Format:**
-- Generated Text: "..."
-{format_instructions}
+                ############
+                İndeks: {index}
+                Kavram: {concept}
+                Boyut: {dimension}
 
-Now, generate the text.
-"""
+                Format Talimatları:
+                {format_instructions}
+            """
+    }
 
-ASPECT_GENERATION_PROMPT = """
-You are an expert in ontology design, knowledge representation, and concept hierarchy analysis. 
-Your task is to generate aspects for a given concept. These will be used in Aspect-Based Sentiment Analysis (ABSA).
-The aspects should be relevant to the concept and as many as wanted.
+    text = ASPECT_PROMPTS.get(language)
 
-Concept: {concept}
-The number of aspects: {num_aspects}
-Aspects:
+    if not text:
+        core_text = ASPECT_PROMPTS["en"].split("############")[0]
+        translated_core_text = Translator.translate(core_text, target_language=language, source_language="en", vendor="deep-translator")
+        text = translated_core_text + ASPECT_PROMPTS["en"].split("############")[1]
+    return text
 
-Format instructions: {format_instructions}
 
-"""
+def get_sentence_prompt(language: str) -> str:
+    SENTENCE_PROMPTS = {
+        "en": """
+                You are an advanced creative writing engine specialised in sentiment-rich text generation.  
+                Your goal is to craft ONE vivid, coherent snippet that unmistakably expresses the required **sentiment toward the given ASPECT** of a CONCEPT, while embodying every stylistic parameter supplied.
 
-ABSA_GENERATE_PROMPT = """
-You are an expert writer with a deep understanding of linguistic styles and sentiment expression. 
-Your task is to generate text based on the given parameters. This text will be used for Aspect-Based Sentiment Analysis (ABSA).
-Therefore you will create a text with given parameters that reflects the sentimens for each aspect for both respectively.
+                ────────────────────────────────────────────────────────
+                ❶ THINK & PLAN (hidden to user)  
+                • Briefly list (max 40 words) how each parameter below will appear in the text (vocabulary, tone, devices, structure).  
+                • Ensure the plan contains at least three concrete lexical or stylistic choices that differentiate it from typical prose for this task.  
+                • End the plan with `### WRITE` on its own line.
 
-**Input Parameters:**
-- **ID:** {id}
-- **Concept:** {concept}
-- **Aspects:** {aspects}
-- **Writing Style:** {writing_style} 
-- **Medium:** {medium}
-- **Persona:** {persona}
-- **Intention:** {intention}
-- **Tone:** {tone}
-- **Audience:** {audience}
-- **Context:** {context}
-- **Language Register:** {language_register} 
-- **Sentiment Label:** {sentiment_label} (Each for one aspect, e.g., Positive, Negative, Neutral, 1-star, 5-star)
-- **Sentence Length:** {sentence_length} (e.g., 1 sentence, 2 sentences, short paragraph, long paragraph)
+                ❷ WRITE (visible to user)  
+                • Produce the final snippet **after** the `### WRITE` marker only.  
+                • Length target: 1– given sentence_length} sentences (±10 %).  
+                • **Do NOT copy phrases** used in earlier calls within the same session; employ fresh metaphors, imagery, and syntax.  
+                • Include at least two rhetorical or figurative devices (e.g., alliteration, metaphor, antithesis) suited to the chosen *writing_style* and *medium*.  
+                • Prioritise, in order:  
+                    1. **Medium** – its conventions should shape diction and structure.  
+                    2. **Aspect-Sentiment** link – the feeling must be unambiguous.  
+                    3. Other parameters (persona, intention, audience, register…).  
+                • Keep language natural; avoid boilerplate sentiment clichés (“very good”, “extremely bad”).  
+                • Reference the *aspect* explicitly at least once; reference the *concept* implicitly or explicitly.
 
-### **Instructions:**
-1. Write the text in the **{medium}** format from the perspective of **{persona}**.
-2. Maintain the given **{writing_style}** throughout.
-3. The text should reflect a **{sentiment_label}** sentiment.
-4. The length of the text should match the **{sentence_length}** parameter.
+                #############
+                ────────────────────────────────────────────────────────
+                INPUT PARAMETERS  
+                Index: {index}  
+                Concept: {concept}  
+                Aspect: {aspect}  
+                Writing Style: {writing_style}  
+                Medium: {medium}  
+                Persona: {persona}  
+                Intention: {intention}  
+                Sentence Length: {sentence_length}
 
-### **Example Output Format:**
-- Generated Text: "..."
-{format_instructions}
+                OUTPUT FORMAT  
+                Dimension → Aspect → Sentiment  
+                {format_instructions}
+                """,
+        "tr": """
+                Gelişmiş bir duygu zengin metin üretimine özel bir yaratıcı yazma motorusunuz.
+                Amacınız, verilen KAVRAM'ın belirli bir YÖNÜ'ne yönelik DUYGUYU açıkça ifade eden BİR canlı, tutarlı parça yazmaktır,
+                aynı zamanda sağlanan her stil parametresini de içermektir.
+                ────────────────────────────────────────────────────────
+                ❶ DÜŞÜN & PLANLA (kullanıcıya gizli)
+                • Aşağıdaki her parametrenin metinde nasıl görüneceğini (maksimum 40 kelime) kısaca listeleyin (söz dağarcığı, ton, araçlar, yapı).
+                • Planın, bu görev için tipik bir anlatımdan ayıran en az üç somut sözlük veya stil seçeneği içermesini sağlayın.
+                • Planı `### YAZ` ile bitirin kendi satırında.
+                ❷ YAZ (kullanıcıya görünür)
+                • Son parçayı `### YAZ` işaretinden SONRA üretin.
+                • Uzunluk hedefi: 1–{sentence_length} cümle (±%10).
+                • Aynı oturum içinde daha önceki çağrılarda kullanılan ifadeleri KOPYALAMAYIN; taze metaforlar, imgeler ve sözdizimi kullanın.
+                • Seçilen yazım stili ve ortam için uygun en az iki retorik veya figüratif araç (örneğin, aliterasyon, metafor, antitez) ekleyin.
+                • Öncelik sırası:
+                    1. Ortam – söz dağarcığı ve yapıyı şekillendirmelidir.
+                    2. Yön-Duygu bağlantısı – duygu açık olmalıdır.
+                    3. Diğer parametreler (persona, niyet, izleyici, kayıt…).
+                • Dili doğal tutun; şablon duygu klişelerini (örneğin, "çok iyi", "son derece kötü") kullanmaktan kaçının.
+                • YÖN'ü en az bir kez açıkça, KAVRAM'ı ise dolaylı veya doğrudan referans edin.
+                #############
+                ────────────────────────────────────────────────────────
+                GİRİŞ PARAMETRELERİ
+                İndeks: {index}
+                Kavram: {concept}
+                Yön: {aspect}
+                Yazım Stili: {writing_style}
+                Ortam: {medium}
+                Persona: {persona}
+                Niyet: {intention}
+                Cümle Uzunluğu: {sentence_length}
+                ÇIKTI FORMAT
+                Boyut → Yön → Duygu
+                {format_instructions}
+                """
+    }
 
-Now, generate the text.
-"""
+    text = SENTENCE_PROMPTS.get(language)
+
+    if not text:
+        core_text = SENTENCE_PROMPTS["en"].split("############")[0]
+        translated_core_text = Translator.translate(core_text, target_language=language, source_language="en", vendor="deep-translator")
+        text = translated_core_text + SENTENCE_PROMPTS["en"].split("############")[1]   
+    return text
+
+
+def get_structure_prompt(language: str) -> str:
+    STRUCTURE_PROMPTS = {
+        "en": """
+                You are an expert on extracting structured information from text.
+                Your task is to analyze the provided text and extract structured information from it.
+                The attributes you need to extract are:
+                1. Concept: The main concept for which the sentiment is being analyzed.
+                2. Aspects: The aspects related to the concept, which can have multiple derivatives. Only the aspects that the text is about should be extracted. Don't create hypothetical aspects. If not clear, just say "general".
+                3. Writing Style: The writing style used in the generated text.
+                4. Medium: The medium for which the text is generated.
+                5. Persona: The persona of the writer.
+                6. Intention: The intention behind the text.
+                7. Sentence Length: The length of the sentences used in the text.
+
+                Don't hypothetically create any information, just extract the information from the text.
+
+                #############
+                Text: {text}
+
+                Format Instructions:
+                {format_instructions}
+            """,
+        "tr": """
+                Metinden yapılandırılmış bilgi çıkarma konusunda uzman birisiniz.
+                Göreviniz, verilen metni analiz etmek ve yapılandırılmış bilgi çıkarmaktır.
+                Çıkarmanız gereken öznitelikler şunlardır:
+                1. Kavram: Duygunun analiz edildiği ana kavram.
+                2. Yönler: Kavramla ilgili yönler, her yönün birden fazla türevi olabilir. Metnin ilgili olduğu yönleri çıkarmalısınız. Hipotetik yönler oluşturmayın. Net değilse, sadece "genel" olarak belirtin.
+                3. Yazım Stili: Üretilen metinde kullanılan yazım stili.
+                4. Ortam: Metnin hedeflendiği ortam.
+                5. Persona: Yazarın karakteri.
+                6. Niyet: Metnin arkasındaki niyet.
+                7. Cümle Uzunluğu: Metinde kullanılan cümlelerin uzunluğu.
+
+                Hipotetik olarak herhangi bir bilgi oluşturmayın, sadece metinden bilgiyi çıkarın.
+
+                #############
+                Metin: {text}
+
+                Format Talimatları:
+                {format_instructions}
+            """
+    }
+    text = STRUCTURE_PROMPTS.get(language)
+
+    if not text:
+        core_text = STRUCTURE_PROMPTS["en"].split("#############")[0]
+        translated_core_text = Translator.translate(core_text, target_language=language, source_language="en", vendor="deep-translator")
+        text = translated_core_text + STRUCTURE_PROMPTS["en"].split("#############")[1]     
+    return text
+
