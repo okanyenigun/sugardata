@@ -21,6 +21,7 @@ def get_dimension_prompt(language: str) -> str:
                 En az 10 boyut üretmelisiniz, hiyerarşik alt kategoriler ve ilgili kavramlar arasında bir karışım sağlamak için.
                 Alt kategoriler (kavramın altında yer alanlar) ve ilgili kavramlar (yaratıcı bağlantılar kuranlar) arasında net bir ayrım yapmalısınız.
 
+                ############
                 Kavram: {concept}
                 Format Talimatları:
                 {format_instructions}
@@ -98,7 +99,7 @@ def get_sentence_prompt(language: str) -> str:
                 • Keep language natural; avoid boilerplate sentiment clichés (“very good”, “extremely bad”).  
                 • Reference the *aspect* explicitly at least once; reference the *concept* implicitly or explicitly.
 
-                #############
+                ############
                 ────────────────────────────────────────────────────────
                 INPUT PARAMETERS  
                 Index: {index}  
@@ -134,7 +135,8 @@ def get_sentence_prompt(language: str) -> str:
                     3. Diğer parametreler (persona, niyet, izleyici, kayıt…).
                 • Dili doğal tutun; şablon duygu klişelerini (örneğin, "çok iyi", "son derece kötü") kullanmaktan kaçının.
                 • YÖN'ü en az bir kez açıkça, KAVRAM'ı ise dolaylı veya doğrudan referans edin.
-                #############
+                
+                ############
                 ────────────────────────────────────────────────────────
                 GİRİŞ PARAMETRELERİ
                 İndeks: {index}
@@ -160,6 +162,98 @@ def get_sentence_prompt(language: str) -> str:
     return text
 
 
+def get_augment_sentence_prompt(language: str) -> str:
+    AUGMENT_SENTENCE_PROMPTS = {
+        "en": """
+                You are an advanced creative writing engine specialised in sentiment-rich text generation.  
+                Your goal is to craft ONE vivid, coherent snippet that unmistakably expresses the required **sentiment toward the given ASPECT** of a CONCEPT, while embodying every stylistic parameter supplied.
+
+                ────────────────────────────────────────────────────────
+                ❶ THINK & PLAN (hidden to user)  
+                • Briefly list (max 40 words) how each parameter below will appear in the text (vocabulary, tone, devices, structure).  
+                • Ensure the plan contains at least three concrete lexical or stylistic choices that differentiate it from typical prose for this task.  
+                • End the plan with `### WRITE` on its own line.
+
+                ❷ WRITE (visible to user)  
+                • Produce the final snippet **after** the `### WRITE` marker only.  
+                • Length target: 1– given Sentence Length sentences (±10 %).  
+                • **Do NOT copy phrases** used in earlier calls within the same session; employ fresh metaphors, imagery, and syntax.  
+                • Include at least two rhetorical or figurative devices (e.g., alliteration, metaphor, antithesis) suited to the chosen *writing_style* and *medium*.  
+                • Prioritise, in order:  
+                    1. **Medium** – its conventions should shape diction and structure.  
+                    2. **Aspect-Sentiment** link – the feeling must be unambiguous.  
+                    3. Other parameters (persona, intention, audience, register…).  
+                • Keep language natural; avoid boilerplate sentiment clichés (“very good”, “extremely bad”).  
+                • Reference the *aspect* explicitly at least once; reference the *concept* implicitly or explicitly.
+                You should never copy the given text, but you can use it as a reference to understand the context.
+                
+                ############
+                ────────────────────────────────────────────────────────
+                INPUT PARAMETERS  
+                Index: {index}  
+                Concept: {concept}  
+                Aspect: {aspect}  
+                Writing Style: {writing_style}  
+                Medium: {medium}  
+                Persona: {persona}  
+                Intention: {intention}  
+                Sentence Length: {sentence_length}
+                Given Text: {given_text}
+
+                OUTPUT FORMAT  
+                Dimension → Aspect → Sentiment  
+                {format_instructions}
+                """,
+        "tr": """
+                Gelişmiş bir duygu zengin metin üretimine özel bir yaratıcı yazma motorusunuz.
+                Amacınız, verilen KAVRAM'ın belirli bir YÖNÜ'ne yönelik DUYGUYU açıkça ifade eden BİR canlı, tutarlı parça yazmaktır,
+                aynı zamanda sağlanan her stil parametresini de içermektir.
+                ────────────────────────────────────────────────────────
+                ❶ DÜŞÜN & PLANLA (kullanıcıya gizli)
+                • Aşağıdaki her parametrenin metinde nasıl görüneceğini (maksimum 40 kelime) kısaca listeleyin (söz dağarcığı, ton, araçlar, yapı).
+                • Planın, bu görev için tipik bir anlatımdan ayıran en az üç somut sözlük veya stil seçeneği içermesini sağlayın.
+                • Planı `### YAZ` ile bitirin kendi satırında.
+                ❷ YAZ (kullanıcıya görünür)
+                • Son parçayı `### YAZ` işaretinden SONRA üretin.
+                • Uzunluk hedefi: 1–{sentence_length} cümle (±%10).
+                • Aynı oturum içinde daha önceki çağrılarda kullanılan ifadeleri KOPYALAMAYIN; taze metaforlar, imgeler ve sözdizimi kullanın.
+                • Seçilen yazım stili ve ortam için uygun en az iki retorik veya figüratif araç (örneğin, aliterasyon, metafor, antitez) ekleyin.
+                • Öncelik sırası:
+                    1. Ortam – söz dağarcığı ve yapıyı şekillendirmelidir.
+                    2. Yön-Duygu bağlantısı – duygu açık olmalıdır.
+                    3. Diğer parametreler (persona, niyet, izleyici, kayıt…).
+                • Dili doğal tutun; şablon duygu klişelerini (örneğin, "çok iyi", "son derece kötü") kullanmaktan kaçının.
+                • YÖN'ü en az bir kez açıkça, KAVRAM'ı ise dolaylı veya doğrudan referans edin.
+                Verilen metni ASLA KOPYALAMAYIN, ancak bağlamı anlamak için referans olarak kullanabilirsiniz.
+
+                ############
+                ────────────────────────────────────────────────────────
+                GİRİŞ PARAMETRELERİ
+                İndeks: {index}
+                Kavram: {concept}
+                Yön: {aspect}
+                Yazım Stili: {writing_style}
+                Ortam: {medium}
+                Persona: {persona}
+                Niyet: {intention}
+                Cümle Uzunluğu: {sentence_length}
+                Verilen Metin: {given_text}
+
+                ÇIKTI FORMAT
+                Boyut → Yön → Duygu
+                {format_instructions}
+                """
+    }
+
+    text = AUGMENT_SENTENCE_PROMPTS.get(language)
+
+    if not text:
+        core_text = AUGMENT_SENTENCE_PROMPTS["en"].split("############")[0]
+        translated_core_text = Translator.translate(core_text, target_language=language, source_language="en", vendor="deep-translator")
+        text = translated_core_text + AUGMENT_SENTENCE_PROMPTS["en"].split("############")[1]   
+    return text
+
+
 def get_structure_prompt(language: str) -> str:
     STRUCTURE_PROMPTS = {
         "en": """
@@ -173,6 +267,7 @@ def get_structure_prompt(language: str) -> str:
                 5. Persona: The persona of the writer.
                 6. Intention: The intention behind the text.
                 7. Sentence Length: The length of the sentences used in the text.
+                8. Given Text: The text provided as input for structure extraction.
 
                 Don't hypothetically create any information, just extract the information from the text.
 
@@ -193,6 +288,7 @@ def get_structure_prompt(language: str) -> str:
                 5. Persona: Yazarın karakteri.
                 6. Niyet: Metnin arkasındaki niyet.
                 7. Cümle Uzunluğu: Metinde kullanılan cümlelerin uzunluğu.
+                8. Verilen Metin: Yapılandırma çıkarımı için verilen metin.
 
                 Hipotetik olarak herhangi bir bilgi oluşturmayın, sadece metinden bilgiyi çıkarın.
 

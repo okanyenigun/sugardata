@@ -1,3 +1,4 @@
+import asyncio
 from deep_translator import GoogleTranslator
 from langdetect import detect
 
@@ -18,4 +19,12 @@ class TranslationUtility:
             return detect(text)
         except Exception as e:
             print("Error in detecting language: ", e)
+            raise e
+        
+    @staticmethod
+    async def detect_language_async(text: str) -> str:
+        try:
+            return await asyncio.to_thread(detect, text)
+        except Exception as e:
+            print("Error in detecting language asynchronously: ", e)
             raise e

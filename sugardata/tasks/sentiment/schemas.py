@@ -1,21 +1,23 @@
 import pandas as pd
 from pydantic import BaseModel, Field
 from datasets import Dataset
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 
 
 class SentimentConfig(BaseModel):
     language: str = Field(description="Language for the sentiment generation, e.g., 'en' for English")
-    dimension_prompt: str = Field(description="Prompt template for generating dimensions related to the concept")
-    aspect_prompt: str = Field(description="Prompt template for generating aspects related to the concept and dimensions")
+    dimension_prompt: Optional[str] = Field(None, description="Prompt template for generating dimensions related to the concept")
+    aspect_prompt: Optional[str] = Field(None, description="Prompt template for generating aspects related to the concept and dimensions")
     sentence_prompt: str = Field(description="Prompt template for generating sentences based on the concept, dimensions, and aspects")
-    structure_prompt: str = Field(description="Prompt template for generating the structure of the sentiment data")
+    structure_prompt: Optional[str] = Field(description="Prompt template for generating the structure of the sentiment data")
     llm: object = Field(description="LLM object used for generating text, e.g., OpenAI's GPT model")
-    n_aspect: int = Field(default=1, description="Number of aspects to generate")
-    n_sentence: int = Field(default=100, description="Number of sentences to generate in total")
+    n_aspect: Optional[int] = Field(default=1, description="Number of aspects to generate")
+    n_sentence: Optional[int] = Field(default=100, description="Number of sentences to generate in total")
     batch_size: int = Field(default=10, description="Number of sentences to generate in each batch")
     label_options: List[str] = Field(default_factory=lambda: ["positive", "negative"], description="List of sentiment labels to choose from")
     export_type: str = Field(default="default", description="Output format of the generated data, e.g., 'dataframe' or 'dataset'")
+    aspect_based_generation: bool = Field(default=False, description="Whether to generate data based on aspects. If False, all sentiments for all aspects are same.")
+    verbose: bool = Field(default=False, description="Whether to print verbose output during processing")
 
 
 class DimensionDerivative(BaseModel):
@@ -114,6 +116,10 @@ class SentimentStructure(BaseModel):
     sentence_length: str = Field(
         title="Sentence Length",
         description="The length of the sentences used in the text, e.g., 'short', 'medium', 'long', etc."
+    )
+    given_text: str = Field(
+        title="Given Text",
+        description="The text provided as input for structure extraction"
     )
 
 SentimentOutput = Union[

@@ -40,6 +40,8 @@ setup(
         'langchain==0.3.18',
         'langchain-openai==0.3.5',
         'langdetect==1.0.9',
+        'pandas==2.3.1',
+        'datasets==4.0.0',
     ],
     python_requires='>=3.9',
 )
