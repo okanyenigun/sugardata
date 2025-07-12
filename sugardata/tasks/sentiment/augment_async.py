@@ -74,10 +74,6 @@ class SentimentAugmenterAsync(NlpTask):
                     "medium": structure.get("medium", ""),
                     "persona": structure.get("persona", ""),
                     "intention": structure.get("intention", ""),
-                    "tone": structure.get("tone", ""),
-                    "audience": structure.get("audience", ""),
-                    "context": structure.get("context", ""),
-                    "language_register": structure.get("language_register", ""),
                     "sentence_length": structure.get("sentence_length", ""),
                     "given_text": structure.get("given_text", "")
                 }
@@ -97,6 +93,8 @@ class SentimentAugmenterAsync(NlpTask):
             batch = batches[i:i + self.config.batch_size]
             try:
                 responses = await chain.abatch(batch)
+                if self.config.verbose and i % (self.config.batch_size * 100) == 0:
+                    print(f"Processing batch {i // self.config.batch_size + 1}/{len(batches) // self.config.batch_size + 1}")
             except Exception as e:
                 if self.config.verbose:
                     print(f"Warning: Error processing batch {i//self.config.batch_size}: {e}. Continuing with next batch.")

@@ -9,7 +9,7 @@ class SentimentConfig(BaseModel):
     dimension_prompt: Optional[str] = Field(None, description="Prompt template for generating dimensions related to the concept")
     aspect_prompt: Optional[str] = Field(None, description="Prompt template for generating aspects related to the concept and dimensions")
     sentence_prompt: str = Field(description="Prompt template for generating sentences based on the concept, dimensions, and aspects")
-    structure_prompt: Optional[str] = Field(description="Prompt template for generating the structure of the sentiment data")
+    structure_prompt: Optional[str] = Field(None, description="Prompt template for generating the structure of the sentiment data")
     llm: object = Field(description="LLM object used for generating text, e.g., OpenAI's GPT model")
     n_aspect: Optional[int] = Field(default=1, description="Number of aspects to generate")
     n_sentence: Optional[int] = Field(default=100, description="Number of sentences to generate in total")
@@ -97,23 +97,28 @@ class SentimentStructure(BaseModel):
         title="Aspects",
         description="A list of aspects related to the concept, each aspect can have multiple derivatives"
     )
-    writing_style: str = Field(
+    writing_style: Optional[str] = Field(
+        None,
         title="Writing Style",
         description="The writing style used in the generated text, e.g., 'formal', 'informal', 'academic', etc."
     )
-    medium: str = Field(
+    medium: Optional[str] = Field(
+        None,
         title="Medium",
         description="The medium for which the text is generated, e.g., 'blog', 'social media', 'email', etc."
     )
-    persona: str = Field(
+    persona: Optional[str] = Field(
+        None,
         title="Persona",
         description="The persona of the writer, e.g., 'expert', 'enthusiast', 'casual', etc."
     )
-    intention: str = Field(
+    intention: Optional[str] = Field(
+        None,
         title="Intention",
         description="The intention behind the text, e.g., 'inform', 'persuade', 'entertain', etc."
     )
-    sentence_length: str = Field(
+    sentence_length: Optional[str] = Field(
+        None,
         title="Sentence Length",
         description="The length of the sentences used in the text, e.g., 'short', 'medium', 'long', etc."
     )
@@ -123,8 +128,9 @@ class SentimentStructure(BaseModel):
     )
 
 SentimentOutput = Union[
-    Dict,
+    List[Dict],
     pd.DataFrame,
     Dataset,
     List[SentimentResponse]
 ]
+

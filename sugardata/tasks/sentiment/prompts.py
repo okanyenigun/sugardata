@@ -78,78 +78,69 @@ def get_aspect_prompt(language: str) -> str:
 def get_sentence_prompt(language: str) -> str:
     SENTENCE_PROMPTS = {
         "en": """
-                You are an advanced creative writing engine specialised in sentiment-rich text generation.  
-                Your goal is to craft ONE vivid, coherent snippet that unmistakably expresses the required **sentiment toward the given ASPECT** of a CONCEPT, while embodying every stylistic parameter supplied.
+                You are a creative writing assistant. Generate vivid, sentiment-rich text that expresses the required sentiment toward the given aspect of a concept.
 
-                ────────────────────────────────────────────────────────
-                ❶ THINK & PLAN (hidden to user)  
-                • Briefly list (max 40 words) how each parameter below will appear in the text (vocabulary, tone, devices, structure).  
-                • Ensure the plan contains at least three concrete lexical or stylistic choices that differentiate it from typical prose for this task.  
-                • End the plan with `### WRITE` on its own line.
+                TASK: Write a short, creative snippet that clearly shows the specified sentiment about the given aspect.
 
-                ❷ WRITE (visible to user)  
-                • Produce the final snippet **after** the `### WRITE` marker only.  
-                • Length target: 1– given sentence_length} sentences (±10 %).  
-                • **Do NOT copy phrases** used in earlier calls within the same session; employ fresh metaphors, imagery, and syntax.  
-                • Include at least two rhetorical or figurative devices (e.g., alliteration, metaphor, antithesis) suited to the chosen *writing_style* and *medium*.  
-                • Prioritise, in order:  
-                    1. **Medium** – its conventions should shape diction and structure.  
-                    2. **Aspect-Sentiment** link – the feeling must be unambiguous.  
-                    3. Other parameters (persona, intention, audience, register…).  
-                • Keep language natural; avoid boilerplate sentiment clichés (“very good”, “extremely bad”).  
-                • Reference the *aspect* explicitly at least once; reference the *concept* implicitly or explicitly.
+                REQUIREMENTS:
+                - Express the sentiment toward the aspect unmistakably
+                - Use the specified writing style and medium conventions
+                - Include at least 2 rhetorical devices (metaphor, alliteration, etc.)
+                - Reference the aspect explicitly at least once
+                - Keep language natural, avoid clichés
+                - Length: approximately given sentence length sentences
+                - DO NOT copy phrases from previous responses; use fresh metaphors and imagery
+                - Prioritize: 1) Medium conventions, 2) Aspect-Sentiment clarity, 3) Other parameters
+
+                RESPOND WITH VALID JSON ONLY:
+                {{
+                "index": "index",
+                "generated_text": "your creative text here"
+                }}
 
                 ############
-                ────────────────────────────────────────────────────────
-                INPUT PARAMETERS  
-                Index: {index}  
-                Concept: {concept}  
-                Aspect: {aspect}  
-                Writing Style: {writing_style}  
-                Medium: {medium}  
-                Persona: {persona}  
-                Intention: {intention}  
-                Sentence Length: {sentence_length}
+                PARAMETERS:
+                - Index: {index}
+                - Concept: {concept}
+                - Aspect: {aspect}
+                - Writing Style: {writing_style}
+                - Medium: {medium}
+                - Persona: {persona}
+                - Intention: {intention}
+                - Sentence Length: {sentence_length}
 
-                OUTPUT FORMAT  
-                Dimension → Aspect → Sentiment  
-                {format_instructions}
+                OUTPUT FORMAT: {format_instructions}
                 """,
         "tr": """
-                Gelişmiş bir duygu zengin metin üretimine özel bir yaratıcı yazma motorusunuz.
-                Amacınız, verilen KAVRAM'ın belirli bir YÖNÜ'ne yönelik DUYGUYU açıkça ifade eden BİR canlı, tutarlı parça yazmaktır,
-                aynı zamanda sağlanan her stil parametresini de içermektir.
-                ────────────────────────────────────────────────────────
-                ❶ DÜŞÜN & PLANLA (kullanıcıya gizli)
-                • Aşağıdaki her parametrenin metinde nasıl görüneceğini (maksimum 40 kelime) kısaca listeleyin (söz dağarcığı, ton, araçlar, yapı).
-                • Planın, bu görev için tipik bir anlatımdan ayıran en az üç somut sözlük veya stil seçeneği içermesini sağlayın.
-                • Planı `### YAZ` ile bitirin kendi satırında.
-                ❷ YAZ (kullanıcıya görünür)
-                • Son parçayı `### YAZ` işaretinden SONRA üretin.
-                • Uzunluk hedefi: 1–{sentence_length} cümle (±%10).
-                • Aynı oturum içinde daha önceki çağrılarda kullanılan ifadeleri KOPYALAMAYIN; taze metaforlar, imgeler ve sözdizimi kullanın.
-                • Seçilen yazım stili ve ortam için uygun en az iki retorik veya figüratif araç (örneğin, aliterasyon, metafor, antitez) ekleyin.
-                • Öncelik sırası:
-                    1. Ortam – söz dağarcığı ve yapıyı şekillendirmelidir.
-                    2. Yön-Duygu bağlantısı – duygu açık olmalıdır.
-                    3. Diğer parametreler (persona, niyet, izleyici, kayıt…).
-                • Dili doğal tutun; şablon duygu klişelerini (örneğin, "çok iyi", "son derece kötü") kullanmaktan kaçının.
-                • YÖN'ü en az bir kez açıkça, KAVRAM'ı ise dolaylı veya doğrudan referans edin.
-                
+                Yaratıcı bir yazma asistanısınız. Verilen kavramın belirli bir yönüne yönelik duygu zengin metin üretin.
+                GÖREV: Belirtilen yön hakkında açıkça gösteren kısa, yaratıcı bir parça yazın.
+                GEREKSİNİMLER:
+                - Yön hakkında duygu açıkça ifade edilmeli
+                - Belirtilen yazım stili ve ortam kurallarına uyulmalı
+                - En az 2 retorik araç (metafor, aliterasyon vb.) kullanılmalı
+                - Yön en az bir kez açıkça referans edilmeli
+                - Dili doğal tutun, klişelerden kaçının
+                - Uzunluk: yaklaşık verilen cümle uzunluğu cümlesi
+                - Önceki yanıtlardan cümle kopyalamayın; taze metaforlar ve imgeler kullanın
+                - Öncelik: 1) Ortam kuralları, 2) Yön-Duygu netliği, 3) Diğer parametreler
+
+                YALNIZCA GEÇERLİ JSON İLE CEVAP VERİN:
+                {{
+                "index": "index",
+                "generated_text": "buraya yaratıcı metni yazın"
+                }}
+
                 ############
-                ────────────────────────────────────────────────────────
-                GİRİŞ PARAMETRELERİ
-                İndeks: {index}
-                Kavram: {concept}
-                Yön: {aspect}
-                Yazım Stili: {writing_style}
-                Ortam: {medium}
-                Persona: {persona}
-                Niyet: {intention}
-                Cümle Uzunluğu: {sentence_length}
-                ÇIKTI FORMAT
-                Boyut → Yön → Duygu
-                {format_instructions}
+                PARAMETRELER:
+                - İndeks: {index}
+                - Kavram: {concept}
+                - Yön: {aspect}
+                - Yazım Stili: {writing_style}
+                - Ortam: {medium}
+                - Persona: {persona}
+                - Niyet: {intention}
+                - Cümle Uzunluğu: {sentence_length}
+                ÇIKTI FORMAT: {format_instructions}
                 """
     }
 
@@ -165,83 +156,65 @@ def get_sentence_prompt(language: str) -> str:
 def get_augment_sentence_prompt(language: str) -> str:
     AUGMENT_SENTENCE_PROMPTS = {
         "en": """
-                You are an advanced creative writing engine specialised in sentiment-rich text generation.  
-                Your goal is to craft ONE vivid, coherent snippet that unmistakably expresses the required **sentiment toward the given ASPECT** of a CONCEPT, while embodying every stylistic parameter supplied.
+                You are a creative writing assistant. Generate vivid, sentiment-rich text that expresses the required sentiment toward the given aspect of a concept.
 
-                ────────────────────────────────────────────────────────
-                ❶ THINK & PLAN (hidden to user)  
-                • Briefly list (max 40 words) how each parameter below will appear in the text (vocabulary, tone, devices, structure).  
-                • Ensure the plan contains at least three concrete lexical or stylistic choices that differentiate it from typical prose for this task.  
-                • End the plan with `### WRITE` on its own line.
+                TASK: Write a short, creative snippet that clearly shows the specified sentiment about the given aspect.
 
-                ❷ WRITE (visible to user)  
-                • Produce the final snippet **after** the `### WRITE` marker only.  
-                • Length target: 1– given Sentence Length sentences (±10 %).  
-                • **Do NOT copy phrases** used in earlier calls within the same session; employ fresh metaphors, imagery, and syntax.  
-                • Include at least two rhetorical or figurative devices (e.g., alliteration, metaphor, antithesis) suited to the chosen *writing_style* and *medium*.  
-                • Prioritise, in order:  
-                    1. **Medium** – its conventions should shape diction and structure.  
-                    2. **Aspect-Sentiment** link – the feeling must be unambiguous.  
-                    3. Other parameters (persona, intention, audience, register…).  
-                • Keep language natural; avoid boilerplate sentiment clichés (“very good”, “extremely bad”).  
-                • Reference the *aspect* explicitly at least once; reference the *concept* implicitly or explicitly.
-                You should never copy the given text, but you can use it as a reference to understand the context.
-                
+                REQUIREMENTS:
+                - Express the sentiment toward the aspect unmistakably
+                - Use the specified writing style and medium conventions
+                - Include at least 2 rhetorical devices (metaphor, alliteration, etc.)
+                - Reference the aspect explicitly at least once
+                - Keep language natural, avoid clichés
+                - Length: approximately given sentence length sentences
+
+                RESPOND WITH VALID JSON ONLY:
+                {{
+                "index": "index",
+                "generated_text": "your creative text here"
+                }}
                 ############
-                ────────────────────────────────────────────────────────
-                INPUT PARAMETERS  
-                Index: {index}  
-                Concept: {concept}  
-                Aspect: {aspect}  
-                Writing Style: {writing_style}  
-                Medium: {medium}  
-                Persona: {persona}  
-                Intention: {intention}  
-                Sentence Length: {sentence_length}
-                Given Text: {given_text}
+                PARAMETERS:
+                - Index: {index}
+                - Concept: {concept}
+                - Aspect: {aspect}
+                - Writing Style: {writing_style}
+                - Medium: {medium}
+                - Persona: {persona}
+                - Intention: {intention}
+                - Sentence Length: {sentence_length}
+                - Given Text: {given_text}
 
-                OUTPUT FORMAT  
-                Dimension → Aspect → Sentiment  
-                {format_instructions}
+                OUTPUT FORMAT: {format_instructions}
                 """,
         "tr": """
-                Gelişmiş bir duygu zengin metin üretimine özel bir yaratıcı yazma motorusunuz.
-                Amacınız, verilen KAVRAM'ın belirli bir YÖNÜ'ne yönelik DUYGUYU açıkça ifade eden BİR canlı, tutarlı parça yazmaktır,
-                aynı zamanda sağlanan her stil parametresini de içermektir.
-                ────────────────────────────────────────────────────────
-                ❶ DÜŞÜN & PLANLA (kullanıcıya gizli)
-                • Aşağıdaki her parametrenin metinde nasıl görüneceğini (maksimum 40 kelime) kısaca listeleyin (söz dağarcığı, ton, araçlar, yapı).
-                • Planın, bu görev için tipik bir anlatımdan ayıran en az üç somut sözlük veya stil seçeneği içermesini sağlayın.
-                • Planı `### YAZ` ile bitirin kendi satırında.
-                ❷ YAZ (kullanıcıya görünür)
-                • Son parçayı `### YAZ` işaretinden SONRA üretin.
-                • Uzunluk hedefi: 1–{sentence_length} cümle (±%10).
-                • Aynı oturum içinde daha önceki çağrılarda kullanılan ifadeleri KOPYALAMAYIN; taze metaforlar, imgeler ve sözdizimi kullanın.
-                • Seçilen yazım stili ve ortam için uygun en az iki retorik veya figüratif araç (örneğin, aliterasyon, metafor, antitez) ekleyin.
-                • Öncelik sırası:
-                    1. Ortam – söz dağarcığı ve yapıyı şekillendirmelidir.
-                    2. Yön-Duygu bağlantısı – duygu açık olmalıdır.
-                    3. Diğer parametreler (persona, niyet, izleyici, kayıt…).
-                • Dili doğal tutun; şablon duygu klişelerini (örneğin, "çok iyi", "son derece kötü") kullanmaktan kaçının.
-                • YÖN'ü en az bir kez açıkça, KAVRAM'ı ise dolaylı veya doğrudan referans edin.
-                Verilen metni ASLA KOPYALAMAYIN, ancak bağlamı anlamak için referans olarak kullanabilirsiniz.
-
+                Yaratıcı bir yazma asistanısınız. Verilen kavramın belirli bir yönüne yönelik duygu zengin metin üretin.
+                GÖREV: Belirtilen yön hakkında açıkça gösteren kısa, yaratıcı bir parça yazın.
+                GEREKSİNİMLER:
+                - Yön hakkında duygu açıkça ifade edilmeli
+                - Belirtilen yazım stili ve ortam kurallarına uyulmalı
+                - En az 2 retorik araç (metafor, aliterasyon vb.) kullanılmalı
+                - Yön en az bir kez açıkça referans edilmeli
+                - Dili doğal tutun, klişelerden kaçının
+                - Uzunluk: yaklaşık verilen cümle uzunluğu cümlesi
+                YALNIZCA GEÇERLİ JSON İLE CEVAP VERİN:
+                {{
+                "index": "index",
+                "generated_text": "buraya yaratıcı metni yazın"
+                }}  
                 ############
-                ────────────────────────────────────────────────────────
-                GİRİŞ PARAMETRELERİ
-                İndeks: {index}
-                Kavram: {concept}
-                Yön: {aspect}
-                Yazım Stili: {writing_style}
-                Ortam: {medium}
-                Persona: {persona}
-                Niyet: {intention}
-                Cümle Uzunluğu: {sentence_length}
-                Verilen Metin: {given_text}
+                PARAMETRELER:
+                - İndeks: {index}
+                - Kavram: {concept}
+                - Yön: {aspect} 
+                - Yazım Stili: {writing_style}
+                - Ortam: {medium}
+                - Persona: {persona}
+                - Niyet: {intention}
+                - Cümle Uzunluğu: {sentence_length}
+                - Verilen Metin: {given_text}
 
-                ÇIKTI FORMAT
-                Boyut → Yön → Duygu
-                {format_instructions}
+                ÇIKTI FORMAT: {format_instructions}
                 """
     }
 
