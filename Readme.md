@@ -2,6 +2,8 @@
 
 `sugardata` is a Python package that helps you **generate synthetic datasets for NLP tasks**, enabling experimentation, prototyping, and training when labeled data is limited or unavailable.
 
+![](media/logo.png)
+
 # Installation
 
 You can install **sugardata** via pip:
@@ -20,17 +22,28 @@ pip install sugardata
 
 import sugardata as su
 
-results = su.generate_sentiments(concept="online shopping", n_samples=100)
+# generate synchronously
+results = su.generate_sentiment_data(concept="online shopping")
 
-```
+# generate asynchronously
+results = await su.generate_sentiment_data_async(concept="online shopping")
 
-## Task 2: Aspect-Based Sentiment Analysis (ABSA)
+# generate concurrently with multiple vendor
+results = await su.generate_sentiment_multi_vendor_async(concept="online shopping")
 
-```python
+# augment synchronously
+examples = [
+    # some text
+    ...
+]
 
-import sugardata as su
+results = su.augment_sentiment_data(examples=examples)
 
-results = su.generate_aspect_sentiments(concept="smartphones", aspects=["battery life", "camera", "price"], n_samples=100)
+# augment asynchronously
+results = await su.augment_sentiment_data_async(examples=examples)
+
+# augment concurrently with multiple vendor
+results = await su.augment_sentiment_multi_vendor_async(examples=examples)
 
 ```
 

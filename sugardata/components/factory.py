@@ -8,6 +8,7 @@ def create_llm_object(vendor: str, model: str, **kwargs) -> object:
     - ollama [manual installation required]
     - gemini [manual installation required]
     - groq [manual installation required]
+    - together [manual installation required]
     """
     if vendor is None:
         raise ValueError("Vendor must be specified. Supported vendors are: openai, ollama, gemini, groq.")
