@@ -59,3 +59,6 @@ round_1/
 round_2/
 ft_sentiment_model/
 my_saved_dataset/
+.env
+ner_trial.ipynb
+*.pkl

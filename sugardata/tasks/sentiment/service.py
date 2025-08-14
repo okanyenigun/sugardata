@@ -1,7 +1,5 @@
 import asyncio
-import pandas as pd
-from datasets import Dataset
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List
 from .schemas import SentimentConfig, SentimentOutput
 from .generate_sync import SentimentGenerator
 from .generate_async import SentimentGeneratorAsync
@@ -15,18 +13,18 @@ from ...utility.config import DEFAULT_VENDORS
 
 def augment_sentiment_data(
         examples: List[str],
-        language: Optional[str]=None,
-        vendor: str="openai",
-        model: str="gpt-4o-mini",
-        model_params: Optional[Dict]=None,
-        batch_size: int=10,
-        label_options: Optional[List]=["positive", "negative"],
-        export_type: str="default",
-        aspect_based_generation: bool=False,
-        verbose: bool=False,
+        language: Optional[str] = None,
+        vendor: str = "openai",
+        model: str = "gpt-4o-mini",
+        model_params: Optional[Dict] = None,
+        batch_size: int = 10,
+        label_options: Optional[List] = ["positive", "negative"],
+        export_type: str = "default",
+        aspect_based_generation: bool = False,
+        verbose: bool = False,
         **kwargs
 ) -> SentimentOutput:
-    
+
     if not language:
         language = TranslationUtility.detect_language(examples[0])
 
@@ -34,7 +32,7 @@ def augment_sentiment_data(
         model_params = {"temperature": 0.95}
     if "temperature" not in model_params:
         model_params["temperature"] = 0.95
-    
+
     llm = create_llm_object(vendor=vendor, model=model, **model_params)
 
     config = SentimentConfig(
@@ -48,24 +46,24 @@ def augment_sentiment_data(
         aspect_based_generation=aspect_based_generation,
         verbose=verbose
     )
-    
+
     return SentimentAugmenter(config=config).generate(examples=examples)
 
 
 async def augment_sentiment_data_async(
         examples: List[str],
-        language: Optional[str]=None,
-        vendor: str="openai",
-        model: str="gpt-4o-mini",
-        model_params: Optional[Dict]=None,
-        batch_size: int=10,
-        label_options: Optional[List]=["positive", "negative"],
-        export_type: str="default",
-        aspect_based_generation: bool=False,
-        verbose: bool=False,
+        language: Optional[str] = None,
+        vendor: str = "openai",
+        model: str = "gpt-4o-mini",
+        model_params: Optional[Dict] = None,
+        batch_size: int = 10,
+        label_options: Optional[List] = ["positive", "negative"],
+        export_type: str = "default",
+        aspect_based_generation: bool = False,
+        verbose: bool = False,
         **kwargs
 ) -> SentimentOutput:
-    
+
     if not language:
         language = await TranslationUtility.detect_language_async(examples[0])
 
@@ -89,61 +87,61 @@ async def augment_sentiment_data_async(
     )
 
     return await SentimentAugmenterAsync(config=config).generate(examples=examples)
-    
+
 
 async def augment_sentiment_multi_vendor_async(
         examples: List[str],
-        language: Optional[str]=None,
-        vendors: Optional[Dict[str, str]]=None,
-        batch_size: int=10,
-        label_options: Optional[List]=["positive", "negative"],
-        export_type: str="default",
-        aspect_based_generation: bool=False,
-        verbose: bool=False,
+        language: Optional[str] = None,
+        vendors: Optional[Dict[str, str]] = None,
+        batch_size: int = 10,
+        label_options: Optional[List] = ["positive", "negative"],
+        export_type: str = "default",
+        aspect_based_generation: bool = False,
+        verbose: bool = False,
         **kwargs
-) -> SentimentOutput:
-        if not vendors:
-            vendors = DEFAULT_VENDORS
-        
-        tasks = [
-            asyncio.create_task(
-                augment_sentiment_data_async(
-                    examples=examples,
-                    language=language,
-                    vendor=vendor,
-                    model=model,
-                    batch_size=batch_size,
-                    label_options=label_options,
-                    export_type=export_type,
-                    aspect_based_generation=aspect_based_generation,
-                    verbose=verbose,
-                    **kwargs
-                )
+) -> Dict[str, SentimentOutput]:
+    if not vendors:
+        vendors = DEFAULT_VENDORS
+
+    tasks = [
+        asyncio.create_task(
+            augment_sentiment_data_async(
+                examples=examples,
+                language=language,
+                vendor=vendor,
+                model=model,
+                batch_size=batch_size,
+                label_options=label_options,
+                export_type=export_type,
+                aspect_based_generation=aspect_based_generation,
+                verbose=verbose,
+                **kwargs
             )
-            for vendor, model in vendors.items()
-        ]
+        )
+        for vendor, model in vendors.items()
+    ]
 
-        results_list = await asyncio.gather(*tasks)
+    results_list = await asyncio.gather(*tasks)
 
-        return dict(zip(vendors.keys(), results_list))
+    return dict(zip(vendors.keys(), results_list))
 
 
 def generate_sentiment_data(
-        concept: str=None,
-        language: Optional[str]=None,
-        vendor: str="openai",
-        model: str="gpt-4o-mini",
-        model_params: Optional[Dict]=None,
-        n_aspect: int=1,
-        n_sentence: int=100,
-        batch_size: int=10,
-        label_options: Optional[List]=["positive", "negative"],
-        export_type: str="default",
-        dimensions: Optional[List[str]]=None,
-        aspects: Optional[List[str]]=None,
-        verbose: bool=False,
-        **kwargs
-    ) -> SentimentOutput:
+    concept: str = None,
+    language: Optional[str] = None,
+    vendor: str = "openai",
+    model: str = "gpt-4o-mini",
+    model_params: Optional[Dict] = None,
+    n_aspect: int = 1,
+    n_sentence: int = 100,
+    batch_size: int = 10,
+    label_options: Optional[List] = ["positive", "negative"],
+    export_type: str = "default",
+    dimensions: Optional[List[str]] = None,
+    aspects: Optional[List[str]] = None,
+    verbose: bool = False,
+    **kwargs
+) -> SentimentOutput:
 
     if not language:
         language = TranslationUtility.detect_language(concept)
@@ -152,7 +150,7 @@ def generate_sentiment_data(
         model_params = {"temperature": 0.95}
     if "temperature" not in model_params:
         model_params["temperature"] = 0.95
-    
+
     llm = create_llm_object(vendor=vendor, model=model, **model_params)
 
     config = SentimentConfig(
@@ -173,19 +171,19 @@ def generate_sentiment_data(
 
 
 async def generate_sentiment_data_async(
-        concept: str=None,
-        language: Optional[str]=None,
-        vendor: str="openai",
-        model: str="gpt-4o-mini",
-        model_params: Optional[Dict]=None,
-        n_aspect: int=1,
-        n_sentence: int=100,
-        batch_size: int=10,
-        label_options: Optional[List]=["positive", "negative"],
-        export_type: str="default",
-        dimensions: Optional[List[str]]=None,
-        aspects: Optional[List[str]]=None,
-        verbose: bool=False,
+        concept: str = None,
+        language: Optional[str] = None,
+        vendor: str = "openai",
+        model: str = "gpt-4o-mini",
+        model_params: Optional[Dict] = None,
+        n_aspect: int = 1,
+        n_sentence: int = 100,
+        batch_size: int = 10,
+        label_options: Optional[List] = ["positive", "negative"],
+        export_type: str = "default",
+        dimensions: Optional[List[str]] = None,
+        aspects: Optional[List[str]] = None,
+        verbose: bool = False,
         **kwargs
 ) -> SentimentOutput:
 
@@ -215,19 +213,20 @@ async def generate_sentiment_data_async(
 
     return await SentimentGeneratorAsync(config=config).generate(concept=concept, dimensions=dimensions, aspects=aspects)
 
+
 async def generate_sentiment_multi_vendor_async(
-        concept: str=None,
-        language: Optional[str]=None,
-        vendors: Dict[str, str]=None,
-        model_params: Optional[Dict]=None,
-        n_aspect: int=1,
-        n_sentence: int=100,
-        batch_size: int=10,
-        label_options: Optional[List]=["positive", "negative"],
-        export_type: str="default",
-        dimensions: Optional[List[str]]=None,
-        aspects: Optional[List[str]]=None,
-        verbose: bool=False,
+        concept: str = None,
+        language: Optional[str] = None,
+        vendors: Dict[str, str] = None,
+        model_params: Optional[Dict] = None,
+        n_aspect: int = 1,
+        n_sentence: int = 100,
+        batch_size: int = 10,
+        label_options: Optional[List] = ["positive", "negative"],
+        export_type: str = "default",
+        dimensions: Optional[List[str]] = None,
+        aspects: Optional[List[str]] = None,
+        verbose: bool = False,
         **kwargs
 ) -> Dict[str, SentimentOutput]:
 
@@ -259,4 +258,3 @@ async def generate_sentiment_multi_vendor_async(
     results_list = await asyncio.gather(*tasks)
 
     return dict(zip(vendors.keys(), results_list))
-
