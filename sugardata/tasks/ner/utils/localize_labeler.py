@@ -1,4 +1,14 @@
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
+
+
+def split_tokens_with_regex(text: str) -> List[str]:
+    tokens = text.split(" ")
+    pattern = re.compile(
+        r"\p{L}[\p{L}\p{M}\p{N}_’']*|\p{N}+|[^\s]", re.UNICODE
+    )
+    tokens = pattern.findall(text)
+    return tokens
+
 
 # Use the `regex` module for \p{...} Unicode properties (pip install regex)
 try:

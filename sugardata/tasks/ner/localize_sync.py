@@ -1,6 +1,8 @@
 import regex as re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from .schemas import NERConfig, LocalNERText, NERResponse, NerOutput
+from .utils.localize_labeler import split_tokens_with_regex
+from .utils.alignment import TokenAlignmentWorker
 from ..base import NlpTask
 from ...components.standard_chain_builder import StandardChainBuilder
 
@@ -10,51 +12,47 @@ class NERLocalizer(NlpTask):
     def __init__(self, config: NERConfig):
         self.config = config
 
-    def generate(self, examples: List[Dict[str, Any]], target_language: str) -> NerOutput:
-        label_mapping = self._assign_labels_to_entities(examples)
+    def generate(self, examples: List[Dict[str, Any]]) -> NerOutput:
+        """
+        examples:
+            {
+                "text": "Arsenal won the First Division.", 
+                "ner_tags": {"Arsenal": "organization", "First Division": "organization"}
+            },
+        """
+        self._validate(examples)
+        batches = self._compose_batches(examples)
+        responses = self._generate_text(batches)
+        responses = self._tokenize(responses)
+        _, tag_label_maps = self._map_entity_labels(examples)
+        responses = self._add_response_ner_tags(
+            responses, examples, tag_label_maps)
+        responses = self._align_ner_tags(responses)
+        return responses
 
-        batches = self._compose_batches(examples, target_language)
+    def _validate(self, examples: List[Dict[str, Any]]):
+        for example in examples:
+            if "text" not in example or "ner_tags" not in example:
+                raise ValueError(
+                    "Each example must contain 'text' and 'ner_tags'. For example: {'text': 'Arsenal won the First Division.', 'ner_tags': {'Arsenal': 'organization', 'First Division': 'organization'}}")
 
-        generated_text_result = self._generate_text(batches)
-
-        remap_label_entity = self._remap_labels_to_entities(
-            generated_text_result, label_mapping, examples)
-
-        results = self._tokenize_and_label(
-            generated_text_result, remap_label_entity)
-
-        parsed_data = self._parse_data(
-            generated_text_result, results, remap_label_entity, label_mapping)
-
-        output = self._convert_to_output(parsed_data, NERResponse)
-        return output
-
-    def _assign_labels_to_entities(self, examples: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
-        types = []
-        for ex in examples:
-            types.extend(ex.get("entity_map", {}).values())
-        unique_types = sorted(set(types))
-
-        label_map: Dict[str, Dict[str, int]] = {}
-        cur = 1
-        for t in unique_types:
-            label_map[t] = {"b": cur, "i": cur + 1}
-            cur += 2
-        return label_map
-
-    def _compose_batches(self, examples: List[Dict[str, Any]], target_language: str) -> List[Dict[str, Any]]:
-        batches = []
+    def _compose_batches(self, examples: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+        rows = []
         for i in range(len(examples)):
-            batch = {
+            row = {
                 "index": i,
-                "reference_text": examples[i]["text"],
-                "target_word_mapping": examples[i]["entity_map"],
-                "target_language": target_language,
+                "original_text": examples[i]["text"],
+                "ner_tags": examples[i]["ner_tags"],
+                "target_language": self.config.target_language,
             }
-            batches.append(batch)
+            rows.append(row)
+
+        batches = []
+        for b in range(0, len(rows), self.config.batch_size):
+            batches.append(rows[b:b + self.config.batch_size])
         return batches
 
-    def _generate_text(self, batches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _generate_text(self, batches: List[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         chain = StandardChainBuilder(
             prompt_template=self.config.localization_prompt,
             llm=self.config.llm,
@@ -62,161 +60,56 @@ class NERLocalizer(NlpTask):
         ).build_chain()
 
         results = []
-        for i in range(0, len(batches), self.config.batch_size):
-            batch = batches[i:i + self.config.batch_size]
-            try:
-                responses = chain.batch(batch)
-            except Exception as e:
-                if self.config.verbose:
-                    print(
-                        f"Warning: Error processing batch {i//self.config.batch_size}: {e}. Continuing with next batch.")
-            if not responses:
-                raise ValueError(
-                    "No responses received from the chain. Please check your configuration and input data.")
-            for response in responses:
-                response_dict = response.model_dump()
-                results.append(response_dict)
+        for batch in batches:
+            responses = chain.batch(batch)
+            responses = [x.model_dump() for x in responses]
+            results.extend(responses)
         return results
 
-    def _remap_labels_to_entities(
-            self,
-            generated_text_result:  List[Dict[str, Any]],
-            label_mapping: Dict[str, Dict[str, int]],
-            examples:  List[Dict[str, Any]]
-    ) -> Dict[str, Dict[str, int]]:
-        remap = {}
-        for i in range(len(generated_text_result)):
-            gen_record = generated_text_result[i]
-            org_record_entity_map = examples[i]["entity_map"]
+    def _tokenize(self, responses: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        tokenizer = self.config.tokenizer.tokenize if self.config.tokenizer else split_tokens_with_regex
 
-            for key, value in gen_record["localized_word_mappings"].items():
-                entity_type = org_record_entity_map.get(key)
-                remap[key] = label_mapping.get(entity_type)
-                remap[value] = label_mapping.get(entity_type)
+        for response in responses:
+            response["tokens"] = tokenizer(response["localized_text"])
 
-        return remap
+        return responses
 
-    def _tokenize_and_label(
-            self,
-            generated_text_result: List[Dict[str, Any]],
-            remap_label_entity: Dict[str, Dict[str, int]]
-    ) -> List[Dict[str, Any]]:
-        results = []
+    def _map_entity_labels(self, examples: List[Dict[str, Any]]) -> Tuple[List[str], Dict[str, Dict[str, int]]]:
+        unique_tags = self._get_unique_entity_types(examples)
+        tag_label_maps = self._generate_label_maps(unique_tags)
+        return unique_tags, tag_label_maps
 
-        for item in generated_text_result:
-            text = item.get("localized_text", "") or ""
-            tokens = self._get_tokens(text)
-            norm_tokens = [self._normalize(t) for t in tokens]
-            merged_labels = [0] * len(tokens)
+    def _get_unique_entity_types(self, examples: List[Dict[str, Any]]) -> List[str]:
+        unique_tags = set()
+        for item in examples:
+            unique_tags.update(item["ner_tags"].values())
+        unique_list = sorted(list(unique_tags))
+        return unique_list
 
-            lwm = item.get("localized_word_mappings", {}) or {}
-            entities = set()
-            for k, v in lwm.items():
-                if isinstance(k, str) and k.strip():
-                    entities.add(k)
-                if isinstance(v, str) and v.strip():
-                    entities.add(v)
+    def _generate_label_maps(self, unique_tags: List[str]) -> Dict[str, Dict[str, int]]:
+        tag_label_maps = {}
+        for i, tag in enumerate(unique_tags):
+            tag_label_maps[tag] = {"b": i * 2 + 1, "i": i * 2 + 2}
+        return tag_label_maps
 
-            for ent in entities:
-                # Skip entities that don't have b/i mapping
-                label_pair = remap_label_entity.get(ent)
-                if not label_pair:
-                    continue
+    def _add_response_ner_tags(self, responses: List[Dict[str, Any]], examples: List[Dict[str, Any]], tag_label_maps: Dict[str, Dict[str, int]]) -> List[Dict[str, Any]]:
+        for i, response in enumerate(responses):
+            ner_tag_labels = {}
+            original_ner_tags = examples[i]["ner_tags"]
+            for key, value in response["localized_word_mappings"].items():
+                entity_type = original_ner_tags.get(key)
+                val = tag_label_maps.get(entity_type)
+                ner_tag_labels[key] = val
+                ner_tag_labels[value] = val
+            response["ner_tag_labels"] = ner_tag_labels
 
-                b_val = label_pair["b"]
-                i_val = label_pair["i"]
+        return responses
 
-                ent_tokens = self._get_tokens(ent)
-                ent_norm = [self._normalize(t)
-                            for t in ent_tokens if t.strip()]
-                if not ent_norm:
-                    continue
-
-                m = len(ent_norm)
-                i = 0
-                while i <= len(norm_tokens) - m:
-                    if norm_tokens[i:i+m] == ent_norm:
-                        # Assign B to first, I to rest; merge via max
-                        merged_labels[i] = max(merged_labels[i], b_val)
-                        for k in range(1, m):
-                            merged_labels[i+k] = max(merged_labels[i+k], i_val)
-                        i += m
-                    else:
-                        i += 1
-            results.append({
-                "index": item.get("index"),
-                "tokens": tokens,
-                "labels": merged_labels,
-            })
-
-        return results
-
-    def _normalize(self, tok: str) -> str:
-        for apo in ("'", "’"):
-            if apo in tok:
-                tok = tok.split(apo, 1)[0]
-                break
-        return tok.casefold()
-
-    def _get_tokens(self, text: str) -> List[str]:
-        tokens = text.split(" ")
-        pattern = re.compile(
-            r"\p{L}[\p{L}\p{M}\p{N}_’']*|\p{N}+|[^\s]", re.UNICODE
-        )
-        tokens = pattern.findall(text)
-        return tokens
-
-    def _parse_data(
-        self,
-        generated_text_result: List[Dict[str, Any]],
-        results: List[Dict[str, Any]],
-        remap_label_entity: Dict[str, Dict[str, int]],
-        label_mapping: Dict[str, Dict[str, int]]
-    ) -> List[Dict[str, Any]]:
-        output = []
-        for i in range(len(generated_text_result)):
-            index = results[i]["index"]
-            text = generated_text_result[i]["localized_text"]
-            tokens = results[i]["tokens"]
-            labels = results[i]["labels"]
-            entities = list(
-                generated_text_result[i]["localized_word_mappings"].values())
-
-            label_mappings = []
-            for entity in entities:
-                label_maps = remap_label_entity.get(entity)
-                for key, value in label_mapping.items():
-                    if value == label_maps:
-                        entity_type = key
-                        break
-
-                label_mappings.append({
-                    "entity_type": entity_type,
-                    "labeling": label_maps,
-                    "entity": entity
-                })
-            output.append({
-                "index": index,
-                "text": text,
-                "tokens": tokens,
-                "labels": labels,
-                "label_mappings": label_mappings,
-            })
-
-        return output
-
-    def _assign_labels_to_entities(self, examples: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
-        """
-         {'organization': {'b': 1, 'i': 2}, ...}
-        """
-        types = []
-        for ex in examples:
-            types.extend(ex.get("entity_map", {}).values())
-        unique_types = sorted(set(types))
-
-        label_map: Dict[str, Dict[str, int]] = {}
-        cur = 1
-        for t in unique_types:
-            label_map[t] = {"b": cur, "i": cur + 1}
-            cur += 2
-        return label_map
+    def _align_ner_tags(self, responses):
+        worker = TokenAlignmentWorker(outside_id=0, case_insensitive=False)
+        for response in responses:
+            tokens = response["tokens"]
+            tag_labels = response["ner_tag_labels"]
+            token_tags = worker.align(tokens, tag_labels)
+            response["token_tags"] = token_tags
+        return responses

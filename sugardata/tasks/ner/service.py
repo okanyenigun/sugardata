@@ -16,6 +16,8 @@ def localize_ner_data(
         model_params: Optional[Dict] = None,
         batch_size: int = 10,
         export_type: str = "default",
+        entity_label_mapping: Optional[Dict[str, Dict[str, int]]] = None,
+        tokenizer: Optional[object] = None,
         verbose: bool = False,
         **kwargs
 ) -> NerOutput:
@@ -31,10 +33,13 @@ def localize_ner_data(
         llm=llm,
         batch_size=batch_size,
         export_type=export_type,
-        verbose=verbose
+        verbose=verbose,
+        target_language=target_language,
+        entity_label_mapping=entity_label_mapping,
+        tokenizer=tokenizer
     )
 
-    return NERLocalizer(config=config).generate(examples=examples, target_language=target_language)
+    return NERLocalizer(config=config).generate(examples=examples)
 
 
 async def localize_ner_data_async(

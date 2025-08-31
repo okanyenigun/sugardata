@@ -13,6 +13,12 @@ class NERConfig(BaseModel):
         default=10, description="Number of sentences to generate in each batch")
     export_type: str = Field(
         default="default", description="Output format of the generated data, e.g., 'dataframe' or 'dataset'")
+    target_language: str = Field(
+        description="Target language for localization")
+    entity_label_mapping: Optional[Dict[str, Dict[str, int]]] = Field(
+        default=None, description="Mapping of entity types to their labels")
+    tokenizer: Optional[object] = Field(
+        default=None, description="Tokenizer used for text splitting and encoding")
     verbose: bool = Field(
         default=False, description="Whether to print verbose output during processing")
 
