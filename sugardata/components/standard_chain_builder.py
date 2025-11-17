@@ -30,16 +30,15 @@ class CustomChain:
         inputs["format_instructions"] = self.format_instructions
         return await self.chain.ainvoke(inputs)
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), before_sleep=log_before_sleep)
     def batch(self, inputs: List[Dict[str, str]]) -> List[object]:
         inputs = [{"format_instructions": self.format_instructions, **input} for input in inputs]
-        return self.chain.batch(inputs)
+        results = self.chain.batch(inputs, return_exceptions=True)
+        return [r for r in results if not isinstance(r, Exception)]
     
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), before_sleep=log_before_sleep)
     async def abatch(self, inputs: List[Dict[str, str]]) -> List[object]:
         inputs = [{"format_instructions": self.format_instructions, **input} for input in inputs]
-        return await self.chain.abatch(inputs)
-
+        results = await self.chain.abatch(inputs, return_exceptions=True)
+        return [r for r in results if not isinstance(r, Exception)]
 
 class StandardChainBuilder:
 
