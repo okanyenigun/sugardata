@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Union, Tuple, List
 from .local_sync import NERLocalizer
 from .local_async import NERLocalizerAsync
 from .schemas import NERLocalizerConfig
-from .utils import assign_entity_labels, validate_localize_ner_input_examples, validate_entity_labels
+from .helpers import assign_entity_labels, validate_localize_ner_input_examples, validate_entity_labels
 from .errors import NERValidationError
 from ...components.factory import create_llm_object
 from ...utility.config import DEFAULT_VENDORS

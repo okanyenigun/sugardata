@@ -33,12 +33,36 @@ class CustomChain:
     def batch(self, inputs: List[Dict[str, str]]) -> List[object]:
         inputs = [{"format_instructions": self.format_instructions, **input} for input in inputs]
         results = self.chain.batch(inputs, return_exceptions=True)
-        return [r for r in results if not isinstance(r, Exception)]
+        valid_results = []
+        error_count = 0
+        for i, r in enumerate(results):
+            if isinstance(r, Exception):
+                error_count += 1
+                if error_count == 1:
+                    error_msg = str(r)[:200]
+                    print(f"Error in batch item {i}: {type(r).__name__}: {error_msg}...")
+            else:
+                valid_results.append(r)
+        if error_count > 1:
+            print(f"Total errors: {error_count}")
+        return valid_results
     
     async def abatch(self, inputs: List[Dict[str, str]]) -> List[object]:
         inputs = [{"format_instructions": self.format_instructions, **input} for input in inputs]
         results = await self.chain.abatch(inputs, return_exceptions=True)
-        return [r for r in results if not isinstance(r, Exception)]
+        valid_results = []
+        error_count = 0
+        for i, r in enumerate(results):
+            if isinstance(r, Exception):
+                error_count += 1
+                if error_count == 1:
+                    error_msg = str(r)[:200]
+                    print(f"Error in batch item {i}: {type(r).__name__}: {error_msg}...")
+            else:
+                valid_results.append(r)
+        if error_count > 1:
+            print(f"Total errors: {error_count}")
+        return valid_results
 
 class StandardChainBuilder:
 
